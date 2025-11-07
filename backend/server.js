@@ -1,132 +1,89 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import compression from 'compression';
-import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 // Configuration
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 
-// Middleware de sécurité
-app.use(helmet());
-app.use(compression());
-
-// CORS
+// Middleware
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000
-});
-app.use('/api/', limiter);
+// Routes
+import authRoutes from './routes/auth.js';
+import userRoutes from './routes/users.js';
+import designRoutes from './routes/designs.js';
+import modelRoutes from './routes/models.js';
+import uploadRoutes from './routes/uploads.js';
 
-// Body parser
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
-// Import des routes
-let authRoutes, userRoutes, modelRoutes, designRoutes, uploadRoutes;
-
-try {
-  authRoutes = (await import('./routes/auth.js')).default;
-  userRoutes = (await import('./routes/users.js')).default;
-  modelRoutes = (await import('./routes/models.js')).default;
-  designRoutes = (await import('./routes/designs.js')).default;
-  uploadRoutes = (await import('./routes/uploads.js')).default;
-  console.log('✅ Toutes les routes chargées avec succès');
-} catch (error) {
-  console.error('❌ Erreur chargement routes:', error.message);
-  process.exit(1);
-}
-
-// Routes API
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-app.use('/api/models', modelRoutes);
 app.use('/api/designs', designRoutes);
-app.use('/api/upload', uploadRoutes);
+app.use('/api/models', modelRoutes);
+app.use('/api/uploads', uploadRoutes);
 
-// ✅ Route santé
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({
-    success: true,
-    message: '🚀 API Football Kit en ligne!',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+  res.json({ 
+    status: 'OK', 
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
   });
 });
 
-// ✅ SUPPRIMEZ les routes catch-all problématiques
-// On les remplace par un middleware 404 simple
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+  });
+});
 
-// Gestion des routes non trouvées - MIDDLEWARE SIMPLE
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({
-      success: false,
-      message: `Route API ${req.method} ${req.originalUrl} non trouvée`
-    });
-  }
-  
-  // Pour les autres routes
+// 404 handler
+app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: 'Endpoint non trouvé'
+    message: 'Route not found'
   });
 });
-
-// Gestion globale des erreurs
-app.use((error, req, res, next) => {
-  console.error('💥 Erreur serveur:', error.message);
-
-  if (error.name === 'ValidationError') {
-    return res.status(400).json({
-      success: false,
-      message: 'Données invalides',
-      errors: Object.values(error.errors).map(val => val.message)
-    });
-  }
-
-  if (error.name === 'CastError') {
-    return res.status(400).json({
-      success: false,
-      message: 'ID invalide'
-    });
-  }
-
-  res.status(500).json({
-    success: false,
-    message: process.env.NODE_ENV === 'production' 
-      ? 'Erreur serveur interne' 
-      : error.message
-  });
-});
-
-// Connexion à la base de données
-try {
-  const connectDB = (await import('./config/database.js')).default;
-  await connectDB();
-  console.log('✅ MongoDB connecté avec succès');
-} catch (error) {
-  console.error('❌ Erreur connexion MongoDB:', error.message);
-}
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-  console.log('='.repeat(50));
-  console.log('🚀 SERVEUR DÉMARRÉ AVEC SUCCÈS');
-  console.log('='.repeat(50));
-  console.log(`📍 Port: ${PORT}`);
-  console.log(`🌍 Environnement: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔗 URL Frontend: ${process.env.CLIENT_URL || 'http://localhost:5173'}`);
-  console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-  console.log('='.repeat(50));
-});
+// Start server
+const startServer = async () => {
+  try {
+    // Connexion à la base de données
+    const connectDB = (await import('./config/db.js')).default;
+    await connectDB();
+    console.log('✅ MongoDB connecté avec succès');
+
+    app.listen(PORT, () => {
+      console.log('\n==================================================');
+      console.log('🚀 SERVEUR DÉMARRÉ AVEC SUCCÈS');
+      console.log('==================================================');
+      console.log(`📍 Port: ${PORT}`);
+      console.log(`🌍 Environnement: ${process.env.NODE_ENV}`);
+      console.log(`🔗 URL Frontend: ${process.env.CLIENT_URL}`);
+      console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
+      console.log('==================================================\n');
+    });
+  } catch (error) {
+    console.error('❌ Erreur lors du démarrage du serveur:', error.message);
+    process.exit(1);
+  }
+};
+
+startServer();
