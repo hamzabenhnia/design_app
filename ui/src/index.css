@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+
+/* Animations personnalisées */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Styles pour Three.js canvas */
+canvas {
+  border-radius: 12px;
+}
