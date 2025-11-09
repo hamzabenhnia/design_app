@@ -5,6 +5,11 @@ export const useAuth = () => {
   return useSelector(state => state.auth);
 };
 
+// Alias pour useSelector avec typage Redux
+export const useAppSelector = (selector) => {
+  return useSelector(selector);
+};
+
 // Hook pour les designs
 export const useDesigns = () => {
   return useSelector(state => state.designs);

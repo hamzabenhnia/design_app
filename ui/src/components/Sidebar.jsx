@@ -53,9 +53,9 @@ export default function Sidebar({ isOpen, onClose }) {
               <div className="bg-indigo-50 rounded-lg p-4 mb-4">
                 <div className="flex items-center gap-3">
                   <img
-                    src={user.photo || "https://via.placeholder.com/40"}
+                    src={user.photo?.url || user.photo || "https://via.placeholder.com/40"}
                     alt="Profil"
-                    className="w-10 h-10 rounded-full"
+                    className="w-10 h-10 rounded-full object-cover"
                   />
                   <div>
                     <p className="font-medium text-gray-800">

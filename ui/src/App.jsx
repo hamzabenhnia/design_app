@@ -1,4 +1,7 @@
 import { Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { loadUser } from "./redux/actions/authActions";
 import Home from "./pages/Home";
 import Login from "./pages/LogIn";
 import Register from "./pages/Register";
@@ -9,7 +12,15 @@ import UserList from "./pages/UsersList"
 import AddModel from "./pages/AddModel";
 import Profile from "./pages/Profile" ;
 import NavBar from "./components/NavBar";
+
 export default function App() {
+  const dispatch = useDispatch();
+
+  // Load user from localStorage on app start
+  useEffect(() => {
+    dispatch(loadUser());
+  }, [dispatch]);
+
   return (
     <div>
       <NavBar />

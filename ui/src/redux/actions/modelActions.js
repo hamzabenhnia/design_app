@@ -34,39 +34,55 @@ export const deleteModel = (id) => ({
   payload: id
 });
 
-// Async Actions
+// Async Actions with Backend API
 export const fetchModels = () => {
-  return (dispatch) => {
-    dispatch(fetchModelsRequest());
-    setTimeout(() => {
-      const models = [
-        {
-          id: 1,
-          name: "Maillot Classique",
-          description: "Modèle de maillot de football classique",
-          fileUrl: "/models/shirt.glb"
-        },
-        {
-          id: 2, 
-          name: "Maillot Moderne",
-          description: "Design contemporain pour équipe moderne",
-          fileUrl: "/models/shirt2.glb"
-        }
-      ];
+  return async (dispatch) => {
+    try {
+      dispatch(fetchModelsRequest());
+
+      // Import API service
+      const api = (await import('../../services/api')).default;
+
+      // Call backend API
+      const response = await api.get('/models');
+
+      const models = response.data.models || response.data || [];
+      
       dispatch(fetchModelsSuccess(models));
-    }, 500);
+
+      return { success: true, models };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Erreur lors du chargement des modèles';
+      dispatch(fetchModelsFailure(message));
+      
+      // Return empty array on error so Home page doesn't stay stuck loading
+      dispatch(fetchModelsSuccess([]));
+      
+      return { success: false, error: message };
+    }
   };
 };
 
 export const addModel = (modelData) => {
-  return (dispatch) => {
-    dispatch(addModelRequest());
-    setTimeout(() => {
-      const newModel = {
-        ...modelData,
-        id: Date.now()
-      };
+  return async (dispatch) => {
+    try {
+      dispatch(addModelRequest());
+
+      // Import API service
+      const api = (await import('../../services/api')).default;
+
+      // Call backend API
+      const response = await api.post('/models', modelData);
+
+      const newModel = response.data.model || response.data;
+
       dispatch(addModelSuccess(newModel));
-    }, 500);
+
+      return { success: true, model: newModel };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Erreur lors de l\'ajout du modèle';
+      dispatch(addModelFailure(message));
+      return { success: false, error: message };
+    }
   };
 };
