@@ -44,9 +44,9 @@ export default function NavBar() {
             className="flex items-center gap-2 hover:text-blue-400 transition"
           >
             <img
-              src={user.photo || "https://via.placeholder.com/32"}
+              src={user.photo?.url || user.photo || "https://via.placeholder.com/32"}
               alt="Profil"
-              className="w-8 h-8 rounded-full"
+              className="w-8 h-8 rounded-full object-cover"
             />
             <span>{user.firstName}</span>
           </button>

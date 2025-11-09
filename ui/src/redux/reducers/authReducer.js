@@ -51,13 +51,23 @@ const authReducer = (state = initialState, action) => {
     case AUTH_ACTION_TYPES.UPDATE_PROFILE_FAILURE:
       return { ...state, loading: false, error: action.payload };
 
+    // Load user from localStorage
+    case AUTH_ACTION_TYPES.LOAD_USER:
+      return {
+        ...state,
+        user: action.payload,
+        isAuthenticated: true,
+        loading: false
+      };
+
     // Logout
     case AUTH_ACTION_TYPES.LOGOUT:
       return {
         ...initialState
       };
-      case 'CLEAR_ERROR':
-  return { ...state, error: null };
+      
+    case 'CLEAR_ERROR':
+      return { ...state, error: null };
 
     default:
       return state;

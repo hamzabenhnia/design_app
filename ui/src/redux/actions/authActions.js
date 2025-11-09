@@ -1,6 +1,26 @@
 
 import { AUTH_ACTION_TYPES } from '../constants/actionTypes';
 
+// Load User from localStorage
+export const loadUser = () => (dispatch) => {
+  try {
+    const token = localStorage.getItem('token');
+    const userStr = localStorage.getItem('user');
+    
+    if (token && userStr) {
+      const user = JSON.parse(userStr);
+      dispatch({
+        type: AUTH_ACTION_TYPES.LOAD_USER,
+        payload: user
+      });
+    }
+  } catch (error) {
+    console.error('Failed to load user from localStorage:', error);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+  }
+};
+
 // Login Actions
 export const loginRequest = () => ({
   type: AUTH_ACTION_TYPES.LOGIN_REQUEST
@@ -129,8 +149,19 @@ export const updateUserProfile = (userData) => {
       // Import API service
       const api = (await import('../../services/api')).default;
 
-      // Call backend API
-      const response = await api.put('/auth/profile', userData);
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('firstName', userData.firstName);
+      formData.append('lastName', userData.lastName);
+      formData.append('work', userData.work || '');
+      
+      // Add photo file if present
+      if (userData.photoFile) {
+        formData.append('photo', userData.photoFile);
+      }
+
+      // Call backend API - let axios set Content-Type automatically for FormData
+      const response = await api.put('/auth/profile', formData);
 
       const { user } = response.data;
 
