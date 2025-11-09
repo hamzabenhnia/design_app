@@ -177,13 +177,23 @@ export const updateProfile = async (req, res) => {
     // Gérer l'upload de nouvelle photo
     if (req.file) {
       try {
+        console.log('📸 Photo file received:', req.file.filename);
+        
         // Supprimer l'ancienne photo de Cloudinary si elle existe
         if (req.user.photo && req.user.photo.public_id) {
-          await deleteFromCloudinary(req.user.photo.public_id);
+          try {
+            await deleteFromCloudinary(req.user.photo.public_id);
+            console.log('🗑️ Old photo deleted from Cloudinary');
+          } catch (deleteError) {
+            console.warn('⚠️ Could not delete old photo:', deleteError.message);
+          }
         }
 
         // Upload nouvelle photo
+        console.log('☁️ Uploading to Cloudinary...');
         const result = await uploadToCloudinary(req.file.path, 'football-kits/users');
+        console.log('✅ Photo uploaded successfully:', result.secure_url);
+        
         updateData.photo = {
           public_id: result.public_id,
           url: result.secure_url
@@ -191,10 +201,23 @@ export const updateProfile = async (req, res) => {
 
         // Supprimer le fichier temporaire
         await fs.unlink(req.file.path);
+        console.log('🧹 Temp file cleaned up');
       } catch (uploadError) {
+        console.error('❌ Upload error:', uploadError);
+        
+        // Clean up temp file on error
+        if (req.file && req.file.path) {
+          try {
+            await fs.unlink(req.file.path);
+          } catch (cleanupError) {
+            console.error('Error cleaning up temp file:', cleanupError);
+          }
+        }
+        
         return res.status(500).json({
           success: false,
-          message: 'Erreur lors de l\'upload de la photo'
+          message: 'Erreur lors de l\'upload de la photo',
+          error: uploadError.message
         });
       }
     }
@@ -219,6 +242,7 @@ export const updateProfile = async (req, res) => {
       }
     });
   } catch (error) {
+    console.error('❌ Profile update error:', error);
     res.status(500).json({
       success: false,
       message: error.message
