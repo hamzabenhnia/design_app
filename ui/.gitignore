@@ -44,3 +44,9 @@ vite.config.ts.timestamp-*
 # OS
 Thumbs.db
 .DS_Store
+
+# Production build
+/dist
+/build
+.env.local
+.env.production.local

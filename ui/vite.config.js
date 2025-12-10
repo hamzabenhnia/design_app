@@ -10,6 +10,11 @@ export default defineConfig({
       fastRefresh: true,
     })
   ],
+  build: {
+    outDir: 'dist',
+    sourcemap: false, // Disable for production
+    chunkSizeWarningLimit: 1000,
+  },
   server: {
     port: 5173,
     host: true,
