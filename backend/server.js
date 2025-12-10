@@ -12,13 +12,30 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Middleware
+// CORS Configuration
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.CLIENT_URL, // Netlify URL
+  'https://football-kit-designer.netlify.app', // Your Netlify domain
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log('Blocked by CORS:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -35,10 +52,12 @@ app.use('/api/uploads', uploadRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.status(200).json({
+    status: 'OK',
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
 
@@ -63,27 +82,9 @@ app.use((req, res) => {
 const PORT = process.env.PORT || 5000;
 
 // Start server
-const startServer = async () => {
-  try {
-    // Connexion à la base de données
-    const connectDB = (await import('./config/db.js')).default;
-    await connectDB();
-    console.log('✅ MongoDB connecté avec succès');
-
-    app.listen(PORT, () => {
-      console.log('\n==================================================');
-      console.log('🚀 SERVEUR DÉMARRÉ AVEC SUCCÈS');
-      console.log('==================================================');
-      console.log(`📍 Port: ${PORT}`);
-      console.log(`🌍 Environnement: ${process.env.NODE_ENV}`);
-      console.log(`🔗 URL Frontend: ${process.env.CLIENT_URL}`);
-      console.log(`🏥 Health Check: http://localhost:${PORT}/api/health`);
-      console.log('==================================================\n');
-    });
-  } catch (error) {
-    console.error('❌ Erreur lors du démarrage du serveur:', error.message);
-    process.exit(1);
-  }
-};
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  console.log(`📍 Server URL: http://0.0.0.0:${PORT}`);
+});
 
 startServer();
