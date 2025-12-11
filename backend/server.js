@@ -184,20 +184,32 @@ const startServer = async () => {
     
     // Then start the server
     app.listen(PORT, '0.0.0.0', () => {
+      const baseUrl = process.env.NODE_ENV === 'production' 
+        ? `https://${process.env.RENDER_EXTERNAL_HOSTNAME || 'design-app-1s04.onrender.com'}`
+        : `http://localhost:${PORT}`;
+
       console.log('\n🚀 ================================');
       console.log(`   Server Started Successfully!`);
       console.log('   ================================');
       console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log(`   Port: ${PORT}`);
-      console.log(`   URL: http://0.0.0.0:${PORT}`);
+      console.log(`   Base URL: ${baseUrl}`);
       console.log(`   MongoDB: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '⚠️ Disconnected'}`);
       console.log('   ================================\n');
       console.log('📍 Available Endpoints:');
-      console.log(`   GET  /`);
-      console.log(`   GET  /api/health`);
-      console.log(`   POST /api/auth/register`);
-      console.log(`   POST /api/auth/login`);
-      console.log(`   GET  /api/designs`);
+      console.log(`   GET  ${baseUrl}/`);
+      console.log(`   GET  ${baseUrl}/api/health`);
+      console.log(`   POST ${baseUrl}/api/auth/register`);
+      console.log(`   POST ${baseUrl}/api/auth/login`);
+      console.log(`   GET  ${baseUrl}/api/auth/me`);
+      console.log(`   GET  ${baseUrl}/api/designs`);
+      console.log(`   POST ${baseUrl}/api/designs`);
+      console.log(`   GET  ${baseUrl}/api/users`);
+      console.log(`   POST ${baseUrl}/api/uploads`);
+      console.log('   ================================\n');
+      console.log('🧪 Quick Test Commands:');
+      console.log(`   curl ${baseUrl}/`);
+      console.log(`   curl ${baseUrl}/api/health`);
       console.log('   ================================\n');
     });
   } catch (error) {
@@ -205,6 +217,7 @@ const startServer = async () => {
     process.exit(1);
   }
 };
+
 
 // Handle graceful shutdown
 process.on('SIGTERM', async () => {
